@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import random
+import copy
 
 # importing the dataset
 dataset = pd.read_csv('tic-tac-toe.data.csv')
@@ -39,10 +40,11 @@ X = X[:, l]
 # To keep the mapping of X and y
 y = y.reshape(-1,1)
 dataframe = np.concatenate((X,y),axis=1)
-
+new_df = copy.deepcopy(dataframe)
+#print(new_df[:,18])
 # In order to randomly select 100 rows every time we shuffle the data 
 np.random.shuffle(dataframe)
-
+print(dataframe.shape)
 # Splitting the dataset into Labeled and Unlabeled dataset
 train_size = 100
 labeled_dataset = dataframe[0:train_size,:]
@@ -84,34 +86,17 @@ print(cm)
 accuracy = classifier.score(X_test,y_test)
 print(accuracy)
 
+# Taking Samples in the ratio of 7:3 
+print(new_df.shape)
+df1 = new_df[new_df[:,18] == 1]
+df2 = new_df[new_df[:,18] == 0]
+np.random.shuffle(df1) # All +ve values
+np.random.shuffle(df2) # All -ve values
 
-positive = 0
-negative = 0
-for i in range(0,100):
-  if (dataframe[i][18] == 0):
-    positive = positive + 1
-  else:
-    negative = negative + 1
-print(positive)
-print(negative)
-while (positive != negative):
-  positive = 0
-  negative = 0
-  np.random.shuffle(dataframe)
-  for i in range(0,100):
-    if (dataframe[i][18] == 0):
-      positive = positive + 1
-    else:
-      negative = negative + 1
-
-print("new values")    
-print(positive)
-print(negative)
-
-# Splitting the dataset into Labeled and Unlabeled dataset
+# Splitting the dataset into Labeled and Unlabeled dataset (ratio 1:1)
 train_size1 = 100
-labeled_dataset1 = dataframe[0:train_size1,:]
-unlabeled_dataset1 = dataframe[labeled_dataset1.shape[0]: , :]
+labeled_dataset1 = np.concatenate((df1[0:49,:] , df2[0:49,:]), axis = 0)
+unlabeled_dataset1 = np.concatenate((df1[50:,:] , df2[50:,:]) , axis = 0)
 
 # Splitting the dataset into training set and test set
 X_train1 = labeled_dataset1[:,:-1]
@@ -149,31 +134,31 @@ print(cm1)
 new_accuracy = classifier.score(X_test1,y_test1)
 print(new_accuracy)
 
-'''
-# Query Synthesis using QUERY BY COMMITTEE
-no_of_queries = 0
-while (no_of_queries != 50):
-'''
-# Plotting the bar graph to compare accuracies
-plt.rcdefaults()
+# Processing committee members using K-Means Clustering
+'''Classification algorithm A = naive bayes
+The number of committee members: K
+Few labeled examples: L = 100
+Unlabeled examples: UL = rest
+The condition of stopping: ζ
+The threshold of Vote Entropy: θ
+The threshold of KL-d min α'''
 
-objects = ('Random Sampling' , 'Equal Sampling')
-y_pos = np.arange(len(objects))
-performance = [accuracy*100,new_accuracy*100]
-
-plt.bar(y_pos, performance,align = 'center',width = 0.2, alpha=0.7)
-plt.xticks(y_pos, objects)
-plt.xlabel('Sampling Techniques')
-plt.ylabel('% Accuraies')
-plt.title('NAIVE BAYES')
-#plt.legend()
-plt.tight_layout()
+from sklearn.cluster import KMeans
+WCSS = []
+for i in range(1,11):
+  kmeans = KMeans(n_clusters=i, init='k-means++',max_iter = 300, n_init = 10 , random_state = 0)
+  kmeans.fit(X_train1)
+  WCSS.append(kmeans.inertia_)
+''' 
+plt.plot(range(1,11),WCSS)
+plt.title("The Elbow Method")
+plt.xlabel('No. of Clusters')
+plt.ylabel('WCSS')
 plt.show()
-
-
-
-
-
+'''
+kmeans = KMeans(n_clusters=5, init='k-means++',max_iter = 300, n_init = 10 , random_state = 0)
+y_means = kmeans.fit_predict(X_train1)
+print(y_means)
 
 
 
